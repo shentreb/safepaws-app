@@ -13,27 +13,48 @@
     <h1 class="text-3xl font-extrabold text-center text-teal-600 mb-6">Admin Dashboard</h1>
     <div id="bookings-list" class="space-y-4"></div>
     <div class="grid grid-cols-2 gap-3 mt-6">
-      <a href="driver.html" class="text-center bg-gray-700 text-white p-3 rounded-lg hover:bg-gray-800 transition">Driver View</a>
-      <a href="clinic.html" class="text-center bg-teal-500 text-white p-3 rounded-lg hover:bg-teal-600 transition">Clinic View</a>
+      <a href="driver.html" class="text-center bg-gray-700 text-white p-3 rounded-lg hover:bg-gray-800 transition">Driver Panel</a>
+      <a href="clinic.html" class="text-center bg-teal-500 text-white p-3 rounded-lg hover:bg-teal-600 transition">Clinic Panel</a>
     </div>
     <a href="index.html" class="block text-center mt-4 text-red-600 font-semibold hover:text-red-700">Logout</a>
   </div>
+
   <script type="module">
-    const firebaseConfig = { apiKey: "AIzaSyBVaqhNCrgDlWGEVjXygszJUdQR_bpG7os", authDomain: "safepaws-batangas.firebaseapp.com", projectId: "safepaws-batangas", storageBucket: "safepaws-batangas.firebasestorage.app", messagingSenderId: "629904615191", appId: "1:629904615191:web:45f7148d65ba61a867f952" };
+    const firebaseConfig = {
+      apiKey: "AIzaSyBVaqhNCrgDlWGEVjXygszJUdQR_bpG7os",
+      authDomain: "safepaws-batangas.firebaseapp.com",
+      projectId: "safepaws-batangas",
+      storageBucket: "safepaws-batangas.firebasestorage.app",
+      messagingSenderId: "629904615191",
+      appId: "1:629904615191:web:45f7148d65ba61a867f952"
+    };
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    const app = initializeApp(firebaseConfig); const auth = getAuth(app); const db = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
     const listEl = document.getElementById('bookings-list');
     onAuthStateChanged(auth, (user) => {
       if (!user) { window.location.href = 'index.html'; return; }
       const q = query(collection(db, "bookings"), orderBy("createdAt", "desc"));
       onSnapshot(q, (snapshot) => {
         listEl.innerHTML = '';
-        if (snapshot.empty) { listEl.innerHTML = '<p class="text-center text-gray-500">No bookings found.</p>'; return; }
+        if (snapshot.empty) { listEl.innerHTML = `<p class="text-center text-gray-500">No bookings found.</p>`; return; }
         snapshot.forEach(doc => {
           const b = doc.data();
-          listEl.innerHTML += `<div class="bg-teal-50 p-4 rounded-lg border-teal-200"><p class="font-bold text-lg text-teal-800">${b.petName}</p><p class="text-sm text-gray-700">Type: ${b.petType || 'N/A'} | Weight: ${b.weightClass || 'N/A'}</p><p class="text-sm text-gray-700">Medical: ${b.medicalHistory || 'None'}</p><p class="text-sm text-gray-600 mt-1">From: ${b.pickup}</p><p class="text-sm text-gray-600">To: ${b.dropoff}</p><p class="text-xs mt-2 font-semibold text-teal-600 uppercase">Status: ${b.status}</p></div>`;
+          listEl.innerHTML += `
+            <div class="bg-teal-50 p-4 rounded-lg border-teal-200">
+              <p class="font-bold text-lg text-teal-800">${b.petName}</p>
+              <p class="text-sm text-gray-700">Type: ${b.petType || 'N/A'} | Weight: ${b.weightClass || 'N/A'}</p>
+              <p class="text-sm text-gray-700">Medical: ${b.medicalHistory || 'None'}</p>
+              <p class="text-sm text-gray-600 mt-1">From: ${b.pickup}</p>
+              <p class="text-sm text-gray-600">To: ${b.dropoff}</p>
+              <p class="text-sm text-gray-700">Distance: ${b.distanceKM || '0.0'} km</p>
+              <p class="text-sm font-bold text-teal-700">Fare: ₱${b.price || '0'}</p>
+              <p class="text-xs mt-2 font-semibold text-teal-600 uppercase">Status: ${b.status}</p>
+            </div>
+          `;
         });
       });
     });

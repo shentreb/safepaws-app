@@ -1,43 +1,226 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SafePaws Admin</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&display=swap" rel="stylesheet">
-  <style>
-    :root{--teal:#008080}
-    body{font-family:Poppins;background:#F0FDFD;margin:0}
-    .header{background:var(--teal);color:white;padding:16px;text-align:center;font-weight:700}
-    .box{background:white;margin:20px;padding:20px;border-radius:16px}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SafePaws Customer</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<style>
+:root{--teal:#008080}
+body{margin:0;font-family:'Poppins';background:#F0FDFD}
+.header{background:var(--teal);color:white;padding:16px;text-align:center;font-weight:700;font-size:18px}
+.screen{display:none;min-height:calc(100vh - 52px)}
+.active{display:block}
+.box{background:white;margin:20px;border-radius:16px;padding:24px;box-shadow:0 4px 12px rgba(0,0,0,0.08)}
+input,select,textarea{width:100%;padding:14px;margin:8px 0;border:1.5px solid #E5E7EB;border-radius:12px;font-family:Poppins;box-sizing:border-box}
+.btn{width:100%;padding:14px;background:var(--teal);color:white;border:none;border-radius:12px;font-weight:600;margin-top:8px;cursor:pointer}
+.emergency{background:#dc2626}
+#map{height:300px;border-radius:12px;margin-top:12px;z-index:1}
+.row{display:flex;justify-content:space-between;margin:12px 0;font-size:14px}
+#fare{font-size:28px;font-weight:700;color:var(--teal);text-align:center;margin:16px 0}
+#stat{text-align:center;font-weight:600;margin:12px 0;color:var(--teal)}
+.driver-pin{font-size:36px}
+.leaflet-div-icon{background:transparent;border:none}
+.link{color:var(--teal);font-weight:600;cursor:pointer}
+.hidden{display:none}
+.pet-card{border:1px solid #eee;padding:12px;border-radius:12px;margin-bottom:8px}
+</style>
 </head>
 <body>
-  <div class="header">SafePaws Admin</div>
-  <div id="allBookings" class="box">All Bookings</div>
-  <script type="module">
-    // ====== CONFIG DITO BOI - PALITAN MO TO ======
-    const firebaseConfig = {
-      apiKey: "AIzaSyBVaqhNCrgDlWGEVjXygszJUdQR_bpG7os",
-      authDomain: "safepaws-batangas.firebaseapp.com",
-      projectId: "safepaws-batangas",
-      storageBucket: "safepaws-batangas.firebasestorage.app",
-      messagingSenderId: "629904615191",
-      appId: "1:629904615191:web:45f7148d65ba61a867f952"
-    };
-    // =============================================
+<div class="header">SafePaws</div>
 
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    onSnapshot(collection(db,"bookings"), snap => {
-      allBookings.innerHTML = snap.docs.map(d => `
-        <div style="border-bottom:1px solid #eee;padding:12px 0">
-          ${d.data().shopId} | ${d.data().petName} | ₱${d.data().total} | ${d.data().status} ${d.data().driverLocation ? '📍Live' : ''}
-        </div>
-      `).join('') || 'No data';
-    });
-  </script>
+<div id="authScreen" class="screen active">
+<div class="box">
+<h1 id="authTitle">Welcome Back</h1>
+<input id="email" placeholder="Email" type="email">
+<input id="password" placeholder="Password" type="password">
+<input id="username" placeholder="Username" class="hidden">
+<div id="roleBox" class="hidden"><select id="role"><option value="customer">Pet Owner</option></select></div>
+<button class="btn" id="authBtn" onclick="login()">Sign In</button>
+<p style="text-align:center">New? <span class="link" onclick="toggleAuth()">Create Account</span></p>
+<div id="authError" style="color:red;font-size:13px;font-weight:600"></div>
+</div>
+</div>
+
+<div id="bookScreen" class="screen">
+<div class="box">
+<p>Hi <b id="userName"></b> | <span id="loyalty">0/5 to PAWLOYAL5 -₱50</span></p>
+<button class="btn" style="background:#64748B" onclick="logout()">Logout</button>
+</div>
+<div class="box">
+<h2>My Pets 🐾</h2>
+<div id="petList"></div>
+<input id="petName" placeholder="Pet Name">
+<select id="petType"><option>Dog</option><option>Cat</option><option>Small Pet</option></select>
+<input id="petBreed" placeholder="Breed">
+<input id="petAge" type="number" placeholder="Age">
+<select id="petWeight"><option>0-5 kg</option><option>6-15 kg</option><option>16-30 kg</option><option>Over 30 kg XL</option></select>
+<textarea id="petMed" placeholder="Medical Notes/Allergies"></textarea>
+<button class="btn" onclick="addPet()">Add Pet</button>
+</div>
+<button class="btn emergency" onclick="bookEmergency()">🚨 EMERGENCY RIDE</button>
+<div class="box">
+<h2>Book a Service</h2>
+<select id="petSelect"><option value="">Select Pet</option></select>
+<input id="stop2" placeholder="2nd Stop e.g. Grooming">
+<div id="map"></div>
+<div class="row"><label><input type="checkbox" id="companion"> Pet with Human</label></div>
+<div class="row"><label><input type="checkbox" id="comfortKit"> Comfort Kit ₱50</label></div>
+<div class="row"><label><input type="checkbox" id="insurance"> Insurance ₱15</label></div>
+<div id="fare">Total: ₱200</div>
+<div id="stat"></div>
+<button class="btn" id="bookBtn" onclick="book()">Book Now</button>
+</div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script type="module">
+// ====== PALITAN MO LANG ITO BOI ======
+const firebaseConfig = {
+apiKey: "AIzaSyBVaqhNCrgDlWGEVjXygszJUdQR_bpG7os",
+authDomain: "safepaws-batangas.firebaseapp.com",
+projectId: "safepaws-batangas",
+storageBucket: "safepaws-batangas.firebasestorage.app",
+messagingSenderId: "629904615191",
+appId: "1:629904615191:web:45f7148d65ba61a867f952"
+};
+// ===================================
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, addDoc, serverTimestamp, doc, onSnapshot, setDoc, getDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+let map, userId=null, bookingId=null, driverMarker=null, unsub=null, isLoginMode=true, pets=[], rideCount=0;
+
+const showScreen = id => {document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')};
+
+onAuthStateChanged(auth, async u=>{
+try{
+if(!u){showScreen('authScreen');return;}
+let userDoc = await getDoc(doc(db,"users", u.uid));
+if(!userDoc.exists()){
+await setDoc(doc(db,"users", u.uid), {email: u.email, username: u.displayName || 'User', role: 'customer', status: 'Approved'});
+userDoc = await getDoc(doc(db,"users", u.uid));
+}
+if(userDoc.data().role !== 'customer'){alert('Access Denied. Customer only');signOut(auth);return;}
+userId = u.uid;
+userName.innerText = userDoc.data().username || 'User';
+showScreen('bookScreen');
+loadPets();
+loadLoyalty();
+initMap();
+}catch(e){alert('ERROR: ' + e.message); signOut(auth);}
+});
+
+window.toggleAuth = () => {
+isLoginMode = !isLoginMode;
+authTitle.innerText = isLoginMode ? 'Welcome Back' : 'Create Account';
+authBtn.innerText = isLoginMode ? 'Sign In' : 'Sign Up';
+authBtn.onclick = isLoginMode ? login : signup;
+roleBox.classList.toggle('hidden', isLoginMode);
+username.classList.toggle('hidden', isLoginMode);
+authError.innerText = '';
+};
+
+window.login = async () => {
+try {await signInWithEmailAndPassword(auth, email.value, password.value);} catch(e){ authError.innerText = e.message; alert(e.message); }
+};
+
+window.signup = async () => {
+try {
+if(!username.value) return alert('Username required');
+const cred = await createUserWithEmailAndPassword(auth, email.value, password.value);
+await updateProfile(cred.user, {displayName: username.value});
+await setDoc(doc(db,"users", cred.user.uid), {email: email.value, username: username.value, role: 'customer', status: 'Approved'});
+alert('Account Created! Sign In now.');
+toggleAuth();
+} catch(e){ authError.innerText = e.message; alert(e.message); }
+};
+
+window.logout = async () => {if(unsub) unsub(); await signOut(auth); location.reload();};
+
+async function loadPets(){
+const q = query(collection(db,"pets"), where("ownerId","==",userId));
+onSnapshot(q, snap=>{
+pets=[]; petList.innerHTML=''; petSelect.innerHTML='<option value="">Select Pet</option>';
+snap.forEach(d=>{
+const p=d.data(); pets.push({id:d.id,...p});
+petList.innerHTML+=`<div class="pet-card"><b>${p.name}</b> - ${p.type} ${p.weightClass}<br><small>${p.breed||''} ${p.age||''}yrs</small><canvas id="qr-${d.id}" style="margin-top:8px"></canvas></div>`;
+petSelect.innerHTML+=`<option value="${d.id}">${p.name} ${p.weightClass}</option>`;
+setTimeout(()=>{QRCode.toCanvas(document.getElementById(`qr-${d.id}`),`https://safepaws-batangas.web.app/pet?id=${d.id}`,{width:80});},100);
+});
+}
+
+window.addPet = async ()=>{
+if(!petName.value) return alert('Name required');
+await addDoc(collection(db,"pets"),{ownerId:userId,name:petName.value,type:petType.value,breed:petBreed.value,age:petAge.value,weightClass:petWeight.value,medicalNotes:petMed.value,createdAt:serverTimestamp()});
+alert('Pet Added'); petName.value='';
+}
+
+window.bookEmergency = async ()=>{
+if(pets.length===0) return alert('Add pet first');
+await addDoc(collection(db,"bookings"),{customerId:userId,petId:pets[0].id,isEmergency:true,status:"pending",createdAt:serverTimestamp()});
+alert('🚨 EMERGENCY DISPATCHED');
+}
+
+async function loadLoyalty(){
+const snap = await getDocs(query(collection(db,"bookings"), where("customerId","==",userId)));
+rideCount = snap.size; loyalty.innerText = `${rideCount%5}/5 to PAWLOYAL5 -₱50`;
+}
+
+function initMap(){
+if(map) return;
+map = L.map('map', {zoomControl:false}).setView([13.756,121.058], 12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+L.marker([13.756,121.058]).addTo(map).bindPopup('Batangas Petcare');
+}
+
+function calcFare(){
+const pet = pets.find(p=>p.id===petSelect.value);
+let price = pet?.weightClass?.includes('Over 30')?350:200;
+if(comfortKit.checked) price+=50;
+if(insurance.checked) price+=15;
+if(stop2.value) price+=50;
+if(rideCount>=4) price-=50;
+fare.innerText = `Total: ₱${price}`;
+}
+comfortKit.onchange = calcFare;
+insurance.onchange = calcFare;
+petSelect.onchange = calcFare;
+calcFare();
+
+window.book = async () => {
+const petId = petSelect.value;
+if(!petId) return alert("Select Pet");
+const pet = pets.find(p=>p.id===petId);
+let price = pet?.weightClass?.includes('Over 30')?350:200;
+if(comfortKit.checked) price+=50;
+if(insurance.checked) price+=15;
+if(stop2.value) price+=50;
+if(rideCount>=4) price-=50;
+const ref = await addDoc(collection(db,"bookings"),{customerId: userId, petId, petName: pet.name, petWeight: pet.weightClass, petMedical: pet.medicalNotes, shopId: "batangas-petcare", baseFare: price, addons: {companion: companion.checked, comfortKit: comfortKit.checked, insurance: insurance.checked, stop2: stop2.value}, total: price, status: "pending", createdAt: serverTimestamp()});
+bookingId = ref.id; bookBtn.style.display = 'none';
+await setDoc(doc(db,"users",userId),{rides:rideCount+1},{merge:true});
+listenBooking(bookingId);
+};
+
+function listenBooking(id){
+unsub = onSnapshot(doc(db,"bookings",id), snap => {
+const data = snap.data();
+stat.innerText = `Status: ${data.status.toUpperCase()}`;
+if(data.status === "on_the_way" && data.driverLocation){
+if(!driverMarker){driverMarker = L.marker([data.driverLocation.lat, data.driverLocation.lng], {icon: L.divIcon({html:'🏍️', className:'driver-pin'})}).addTo(map);} 
+else {driverMarker.setLatLng([data.driverLocation.lat, data.driverLocation.lng]);}
+map.setView([data.driverLocation.lat, data.driverLocation.lng], 15);
+}
+if(data.status === "arrived"){stat.innerText = "✅ Driver has arrived!";}
+if(data.status === "done"){stat.innerText = "✅ Service Complete";}
+});
+}
+</script>
 </body>
 </html>

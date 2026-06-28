@@ -3,33 +3,70 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SafePaws | User</title>
+  <title>SafePaws | Login</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-  <style> body { font-family: 'Inter', sans-serif; } #map { height: 300px; border-radius: 0.75rem; } </style>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    #map { height: 300px; border-radius: 0.75rem; z-index: 0; }
+   .hidden { display: none; }
+  </style>
 </head>
 <body class="bg-teal-50 min-h-screen p-4">
   <div class="w-full max-w-lg mx-auto bg-white rounded-2xl shadow-lg p-8">
-    <h1 class="text-3xl font-extrabold text-center text-teal-600 mb-6">Book Pet Transport</h1>
-    
-    <h2 class="text-lg font-bold mb-2">Pet Details</h2>
-    <input id="pet-name" type="text" placeholder="Pet Name" class="w-full p-3 mb-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-    <input id="pet-type" type="text" placeholder="Pet Type - Dog, Cat, Other" class="w-full p-3 mb-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-    <input id="weight" type="text" placeholder="Weight Class - Small, Medium, Large" class="w-full p-3 mb-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-    <textarea id="medical" placeholder="Medical History Notes" class="w-full p-3 mb-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"></textarea>
-    
-    <h2 class="text-lg font-bold mb-2 mt-4">Pickup & Dropoff</h2>
-    <input id="pickup" type="text" placeholder="Pickup Address" class="w-full p-3 mb-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-    <input id="dropoff" type="text" placeholder="Dropoff Address" class="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-    
-    <div id="map" class="mb-4"></div>
-    
-    <button id="book-btn" class="w-full bg-teal-600 text-white font-bold p-3 rounded-lg hover:bg-teal-700">Book Now</button>
-    <p id="book-status" class="text-center mt-4 font-semibold"></p>
-    
-    <a href="#" id="logout" class="block text-center mt-4 text-red-600 font-semibold">Logout</a>
+
+    <!-- AUTH TABS -->
+    <div id="auth-container">
+      <h1 class="text-3xl font-extrabold text-center text-teal-600 mb-6">SafePaws</h1>
+      <div class="flex mb-4 border-b-2 border-teal-100">
+        <button id="login-tab" class="w-1/2 p-3 font-bold text-teal-600 border-b-4 border-teal-600">Login</button>
+        <button id="signup-tab" class="w-1/2 p-3 font-bold text-gray-400">Sign Up</button>
+      </div>
+
+      <div id="login-form">
+        <input id="login-email" type="email" placeholder="Email" class="w-full p-3 mb-3 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+        <input id="login-password" type="password" placeholder="Password" class="w-full p-3 mb-4 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+        <button id="login-btn" class="w-full bg-teal-600 text-white font-bold p-3 rounded-lg hover:bg-teal-700 transition">Login</button>
+      </div>
+
+      <div id="signup-form" class="hidden">
+        <input id="signup-email" type="email" placeholder="Email" class="w-full p-3 mb-3 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+        <input id="signup-password" type="password" placeholder="Password Min 6 chars" class="w-full p-3 mb-4 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+        <button id="signup-btn" class="w-full bg-teal-600 text-white font-bold p-3 rounded-lg hover:bg-teal-700 transition">Create Account</button>
+      </div>
+      <p id="auth-status" class="text-center mt-4 font-semibold"></p>
+    </div>
+
+    <!-- USER BOOKING FORM -->
+    <div id="app-container" class="hidden">
+      <h1 class="text-3xl font-extrabold text-center text-teal-600 mb-6">Book Pet Transport</h1>
+
+      <h2 class="text-lg font-bold mb-2 text-gray-800">Pet Details</h2>
+      <input id="pet-name" type="text" placeholder="Pet Name" class="w-full p-3 mb-3 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+      <input id="pet-type" type="text" placeholder="Pet Type - Dog, Cat, Other" class="w-full p-3 mb-3 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+      <input id="weight" type="text" placeholder="Weight Class - Small, Medium, Large" class="w-full p-3 mb-3 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+      <textarea id="medical" placeholder="Medical History Notes" rows="3" class="w-full p-3 mb-3 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"></textarea>
+
+      <h2 class="text-lg font-bold mb-2 mt-4 text-gray-800">Pickup & Dropoff</h2>
+      <input id="pickup" type="text" placeholder="Pickup Address" class="w-full p-3 mb-3 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+      <input id="dropoff" type="text" placeholder="Dropoff Address" class="w-full p-3 mb-4 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+
+      <p class="text-sm text-gray-600 mb-2">Map: TEAL Pin = Clinic/Grooming Location</p>
+      <div id="map" class="mb-4"></div>
+
+      <button id="book-btn" class="w-full bg-teal-600 text-white font-bold p-3 rounded-lg hover:bg-teal-700 transition">Book Now</button>
+      <p id="book-status" class="text-center mt-4 font-semibold"></p>
+
+      <div class="grid grid-cols-2 gap-3 mt-4">
+        <a href="driver.html" class="text-center bg-gray-700 text-white p-3 rounded-lg hover:bg-gray-800 transition">Driver View</a>
+        <a href="clinic.html" class="text-center bg-teal-500 text-white p-3 rounded-lg hover:bg-teal-600 transition">Clinic View</a>
+      </div>
+      <a href="#" id="logout" class="block text-center mt-4 text-red-600 font-semibold hover:text-red-700">Logout</a>
+    </div>
   </div>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script type="module">
     const firebaseConfig = {
       apiKey: "AIzaSyBVaqhNCrgDlWGEVjXygszJUdQR_bpG7os",
@@ -39,43 +76,122 @@
       messagingSenderId: "629904615191",
       appId: "1:629904615191:web:45f7148d65ba61a867f952"
     };
+
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore, collection, addDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-    
-    const map = L.map('map').setView([13.7565, 121.0583], 12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-    onAuthStateChanged(auth, (user) => { if (!user) { window.location.href = 'index.html'; } });
-    
-    document.getElementById('book-btn').addEventListener('click', async () => {
-      const petName = document.getElementById('pet-name').value; 
-      const petType = document.getElementById('pet-type').value; 
-      const weight = document.getElementById('weight').value; 
-      const medical = document.getElementById('medical').value; 
-      const pickup = document.getElementById('pickup').value; 
-      const dropoff = document.getElementById('dropoff').value; 
-      const statusEl = document.getElementById('book-status');
-      
-      if (!petName || !pickup || !dropoff) { statusEl.textContent = 'Please fill in Pet Name, Pickup, and Dropoff.'; statusEl.className = 'text-center mt-4 text-red-600 font-semibold'; return; }
-      
-      try {
-        await addDoc(collection(db, "bookings"), { 
-          petName, petType, weightClass: weight, medicalHistory: medical, 
-          pickup, dropoff, status: 'pending', createdAt: serverTimestamp(), userId: auth.currentUser.uid 
-        });
-        statusEl.textContent = 'Booking submitted successfully!'; 
-        statusEl.className = 'text-center mt-4 text-green-600 font-semibold';
-        document.getElementById('pet-name').value = ''; document.getElementById('pet-type').value = ''; 
-        document.getElementById('weight').value = ''; document.getElementById('medical').value = '';
-        document.getElementById('pickup').value = ''; document.getElementById('dropoff').value = '';
-      } catch (e) { statusEl.textContent = 'Error: ' + e.message; statusEl.className = 'text-center mt-4 text-red-600 font-semibold'; }
+    // DOM
+    const authContainer = document.getElementById('auth-container');
+    const appContainer = document.getElementById('app-container');
+    const loginTab = document.getElementById('login-tab');
+    const signupTab = document.getElementById('signup-tab');
+    const loginForm = document.getElementById('login-form');
+    const signupForm = document.getElementById('signup-form');
+    const authStatus = document.getElementById('auth-status');
+
+    // TAB SWITCH
+    loginTab.onclick = () => { loginForm.classList.remove('hidden'); signupForm.classList.add('hidden'); loginTab.classList.add('text-teal-600', 'border-teal-600'); loginTab.classList.remove('text-gray-400'); signupTab.classList.add('text-gray-400'); signupTab.classList.remove('border-teal-600'); authStatus.textContent = ''; };
+    signupTab.onclick = () => { signupForm.classList.remove('hidden'); loginForm.classList.add('hidden'); signupTab.classList.add('text-teal-600', 'border-teal-600'); signupTab.classList.remove('text-gray-400'); loginTab.classList.add('text-gray-400'); loginTab.classList.remove('border-teal-600'); authStatus.textContent = ''; };
+
+    // AUTH STATE
+    let map;
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        authContainer.classList.add('hidden');
+        appContainer.classList.remove('hidden');
+        initMap();
+      } else {
+        authContainer.classList.remove('hidden');
+        appContainer.classList.add('hidden');
+      }
     });
 
-    document.getElementById('logout').onclick = () => signOut(auth).then(() => window.location.href = 'index.html');
+    // LOGIN
+    document.getElementById('login-btn').onclick = async () => {
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value.trim();
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (e) { authStatus.textContent = 'Login Error: ' + e.message; authStatus.className = 'text-center mt-4 text-red-600 font-semibold'; }
+    };
+
+    // SIGNUP
+    document.getElementById('signup-btn').onclick = async () => {
+      const email = document.getElementById('signup-email').value.trim();
+      const password = document.getElementById('signup-password').value.trim();
+      try {
+        await createUserWithEmailAndPassword(auth, email, password);
+      } catch (e) { authStatus.textContent = 'Signup Error: ' + e.message; authStatus.className = 'text-center mt-4 text-red-600 font-semibold'; }
+    };
+
+    // LOGOUT
+    document.getElementById('logout').onclick = (e) => {
+      e.preventDefault();
+      signOut(auth);
+    };
+
+    // MAP + FIREBASE PIN
+    function initMap() {
+      if (map) return;
+      map = L.map('map').setView([13.7565, 121.0583], 11);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
+
+      const tealIcon = L.icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-teal.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+        iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+      });
+
+      getDocs(collection(db, "vet_clinics")).then(clinicSnap => {
+        if (!clinicSnap.empty) {
+          const clinic = clinicSnap.docs[0].data();
+          const lat = clinic.gps?.lat || clinic.latitude;
+          const lng = clinic.gps?.lng || clinic.longitude;
+          if (lat && lng) {
+            map.setView([lat, lng], 14);
+            L.marker([lat, lng], {icon: tealIcon}).addTo(map)
+            .bindPopup(`<b>${clinic.clinicName || 'SafePaws Clinic'}</b><br>${clinic.address || 'Drop-off Point'}`);
+          }
+        }
+      });
+    }
+
+    // BOOKING
+    document.getElementById('book-btn').onclick = async () => {
+      const petName = document.getElementById('pet-name').value.trim();
+      const petType = document.getElementById('pet-type').value.trim();
+      const weight = document.getElementById('weight').value.trim();
+      const medical = document.getElementById('medical').value.trim();
+      const pickup = document.getElementById('pickup').value.trim();
+      const dropoff = document.getElementById('dropoff').value.trim();
+      const statusEl = document.getElementById('book-status');
+
+      if (!petName ||!pickup ||!dropoff) {
+        statusEl.textContent = 'Please fill in Pet Name, Pickup, and Dropoff.';
+        statusEl.className = 'text-center mt-4 text-red-600 font-semibold';
+        return;
+      }
+
+      try {
+        await addDoc(collection(db, "bookings"), {
+          petName, petType: petType || 'N/A', weightClass: weight || 'N/A', medicalHistory: medical || 'None',
+          pickup, dropoff, status: 'pending', createdAt: serverTimestamp(), userId: auth.currentUser.uid
+        });
+        statusEl.textContent = 'Booking submitted successfully!';
+        statusEl.className = 'text-center mt-4 text-green-600 font-semibold';
+        document.getElementById('pet-name').value = ''; document.getElementById('pet-type').value = '';
+        document.getElementById('weight').value = ''; document.getElementById('medical').value = '';
+        document.getElementById('pickup').value = ''; document.getElementById('dropoff').value = '';
+      } catch (e) {
+        statusEl.textContent = 'Error: ' + e.message;
+        statusEl.className = 'text-center mt-4 text-red-600 font-semibold';
+      }
+    };
   </script>
 </body>
 </html>

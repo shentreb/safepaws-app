@@ -1,167 +1,60 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SafePaws Clinic</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" /> <!-- DAGDAG MAP -->
-<style>
-:root{--teal:#008080}
-body{font-family:Poppins;background:#F0FDFD;margin:0}
-.header{background:var(--teal);color:white;padding:16px;text-align:center;font-weight:700}
-.box{background:white;margin:20px;padding:20px;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,0.08)}
-input,button{width:100%;padding:14px;margin:8px 0;border-radius:12px;border:1.5px solid #E5E7EB;font-family:Poppins;box-sizing:border-box}
-button{background:var(--teal);color:white;border:none;padding:8px 16px;border-radius:8px;margin-left:8px;cursor:pointer;font-weight:600}
-.red{background:#DC2626}
-.link{color:var(--teal);font-weight:600;cursor:pointer;text-align:center;display:block;margin-top:8px}
-.hidden{display:none}
-.booking-card{border-bottom:1px solid #eee;padding:12px 0}
-.badge{padding:4px 8px;border-radius:8px;font-size:12px;font-weight:600;color:white;margin-left:8px}
-.pending{background:#f97316}
-.on_the_way{background:#2563eb}
-.arrived{background:#16a34a}
-.emergency{border-left:4px solid #dc2626;padding-left:8px}
-#map{height:250px;border-radius:12px;margin:12px 0;z-index:1} /* DAGDAG MAP */
-.leaflet-div-icon{background:transparent;border:none}
-.driver-pin{font-size:36px}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SafePaws Clinic</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
+  <style> body { font-family: 'Inter', sans-serif; } </style>
 </head>
-<body>
-<div class="header">SafePaws Clinic</div>
+<body class="bg-teal-50 min-h-screen p-4">
+  <div class="w-full max-w-lg mx-auto bg-white rounded-2xl shadow-lg p-8">
+    <h1 class="text-3xl font-extrabold text-center text-teal-600 mb-6">Clinic / Grooming Dashboard</h1>
+    <div id="bookings-list" class="space-y-4"></div>
+    <div class="grid grid-cols-2 gap-3 mt-6">
+      <a href="admin.html" class="text-center bg-teal-600 text-white p-3 rounded-lg hover:bg-teal-700 transition">Admin Panel</a>
+      <a href="driver.html" class="text-center bg-gray-700 text-white p-3 rounded-lg hover:bg-gray-800 transition">Driver Panel</a>
+    </div>
+    <a href="index.html" class="block text-center mt-4 text-red-600 font-semibold hover:text-red-700">Logout</a>
+  </div>
 
-<div id="authBox" class="box"> <!-- DAGDAG LOGIN -->
-<h2 id="authTitle">Clinic Login</h2>
-<input id="email" placeholder="Email" type="email">
-<input id="password" placeholder="Password" type="password">
-<input id="username" placeholder="Clinic Name" class="hidden">
-<button id="authBtn" onclick="login()">Sign In</button>
-<span class="link" onclick="toggleAuth()">New? Register Clinic</span>
-<div id="authError" style="color:red;font-size:13px;margin-top:8px;text-align:center"></div>
-</div>
+  <script type="module">
+    const firebaseConfig = {
+      apiKey: "AIzaSyBVaqhNCrgDlWGEVjXygszJUdQR_bpG7os",
+      authDomain: "safepaws-batangas.firebaseapp.com",
+      projectId: "safepaws-batangas",
+      storageBucket: "safepaws-batangas.firebasestorage.app",
+      messagingSenderId: "629904615191",
+      appId: "1:629904615191:web:45f7148d65ba61a867f952"
+    };
 
-<div id="dashBox" class="box" style="display:none"> <!-- DAGDAG DASHBOARD -->
-<div style="display:flex;justify-content:space-between;align-items:center">
-<h2>Bookings</h2>
-<button class="red" style="width:auto;padding:8px 12px" onclick="logout()">Logout</button>
-</div>
-<p>Hi <b id="clinicName"></b></p>
-<div id="bookingsList">Loading...</div>
-</div>
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script> <!-- DAGDAG MAP -->
-<script type="module">
-// ====== CONFIG DITO BOI - PALITAN MO TO ======
-const firebaseConfig = {
-apiKey: "AIzaSyBVaqhNCrgDlWGEVjXygszJUdQR_bpG7os", // PALITAN MO NG TOTOONG API KEY
-authDomain: "safepaws-batangas.firebaseapp.com",
-projectId: "safepaws-batangas",
-storageBucket: "safepaws-batangas.firebasestorage.app",
-messagingSenderId: "629904615191",
-appId: "1:629904615191:web:45f7148d65ba61a867f952"
-};
-// =============================================
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const listEl = document.getElementById('bookings-list');
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-let clinicId=null, isLoginMode=true, map=null, driverMarker=null, activeBookingId=null;
-
-window.toggleAuth = () => {
-isLoginMode = !isLoginMode;
-authTitle.innerText = isLoginMode ? 'Clinic Login' : 'Register Clinic';
-authBtn.innerText = isLoginMode ? 'Sign In' : 'Sign Up';
-username.classList.toggle('hidden', isLoginMode);
-authBtn.onclick = isLoginMode ? login : signup;
-authError.innerText = '';
-};
-
-window.login = async () => {
-try {
-const cred = await signInWithEmailAndPassword(auth, email.value, password.value);
-const userDoc = await getDoc(doc(db,"users", cred.user.uid));
-if(userDoc.data().role !== 'clinic'){alert('Access Denied. Clinic only');signOut(auth);return;} // ROLE CHECK
-if(userDoc.data().status !== 'Approved'){alert('Wait for Admin Approval');signOut(auth);return;}
-clinicId = cred.user.uid;
-clinicName.innerText = userDoc.data().username;
-authBox.style.display='none';
-dashBox.style.display='block';
-listenBookings();
-} catch(e){ authError.innerText = e.message }
-};
-
-window.signup = async () => {
-try {
-if(!username.value) return alert('Clinic Name required');
-const cred = await createUserWithEmailAndPassword(auth, email.value, password.value);
-await updateProfile(cred.user, {displayName: username.value});
-await setDoc(doc(db,"users", cred.user.uid), {email: email.value, username: username.value, role: 'clinic', status: 'Pending'});
-alert('Clinic Registered! Wait for Admin Approval.');
-toggleAuth();
-} catch(e){ authError.innerText = e.message }
-};
-
-window.logout = async () => {
-if(map){map.remove(); map=null; driverMarker=null;}
-await signOut(auth);
-dashBox.style.display='none';
-authBox.style.display='block';
-email.value = '';
-password.value = '';
-};
-
-function listenBookings(){
-onSnapshot(query(collection(db,"bookings"), where("shopId","==","batangas-petcare")), snap => {
-bookingsList.innerHTML = snap.empty ? 'No bookings' : snap.docs.map(d => {
-const data = d.data();
-const statusClass = data.status;
-const isEmergency = data.isEmergency ? 'emergency' : '';
-const trackBtn = data.status === 'on_the_way' && data.driverLocation ? `<button onclick="trackDriver('${d.id}', ${data.driverLocation.lat}, ${data.driverLocation.lng})">Track Rider</button>` : '';
-return `<div class="booking-card ${isEmergency}">
-<b>${data.petName || 'Emergency'}</b> 
-<span class="badge ${statusClass}">${data.status.toUpperCase()}</span><br>
-<small>${data.petWeight || ''} ${data.isEmergency ? '🚨 EMERGENCY' : ''}</small><br>
-<small>Medical: ${data.petMedical || 'None'}</small><br>
-<b>₱${data.total || 'N/A'}</b><br>
-${trackBtn}
-${data.status !== 'done' ? `<button onclick="markDone('${d.id}')">Mark Done</button>` : ''}
-<div id="map-${d.id}" class="hidden" style="margin-top:12px"></div> <!-- MAP CONTAINER -->
-</div>`;
-}).join('');
-});
-}
-
-window.markDone = async (id) => {
-await updateDoc(doc(db,"bookings",id), {status:"done"});
-};
-
-window.trackDriver = (id, lat, lng) => { // DAGDAG TRACKER
-const mapDiv = document.getElementById(`map-${id}`);
-if(activeBookingId === id && map){ // Toggle off
-map.remove(); map=null; driverMarker=null; mapDiv.classList.add('hidden'); activeBookingId=null; return;
-}
-// Close other maps
-if(map){map.remove(); map=null; driverMarker=null;}
-document.querySelectorAll('[id^=map-]').forEach(m=>m.classList.add('hidden'));
-
-mapDiv.classList.remove('hidden');
-activeBookingId = id;
-map = L.map(`map-${id}`).setView([lat,lng], 15);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-driverMarker = L.marker([lat,lng], {icon: L.divIcon({html:'🏍️', className:'driver-pin'})}).addTo(map);
-
-// Live update
-const unsub = onSnapshot(doc(db,"bookings",id), snap => {
-const data = snap.data();
-if(data.driverLocation && driverMarker){
-driverMarker.setLatLng([data.driverLocation.lat, data.driverLocation.lng]);
-map.setView([data.driverLocation.lat, data.driverLocation.lng], 15);
-}
-if(data.status === 'done' || data.status === 'arrived'){unsub();}
-});
-};
-</script>
-</body>
-</html>
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        window.location.href = 'index.html';
+        return;
+      }
+      const q = query(collection(db, "bookings"), orderBy("createdAt", "desc"));
+      onSnapshot(q, (snapshot) => {
+        listEl.innerHTML = '';
+        if (snapshot.empty) {
+          listEl.innerHTML = '<p class="text-center text-gray-500">No bookings found.</p>';
+          return;
+        }
+        snapshot.forEach(doc => {
+          const b = doc.data();
+          listEl.innerHTML += `
+            <div class="bg-teal-50 p-4 rounded-lg border-teal-200">
+              <p class="font-bold text-lg text-teal-800">${b.petName}</p>
+              <p class="text-sm text-gray-700">Type: ${b.petType || 'N/A'} | Weight: ${b.weightClass || 'N/A'}</p>
+              <p class="text-sm text-gray-700">Medical: ${b.medicalHistory || 'None'}</p>
+              <p class="text-sm text-gray

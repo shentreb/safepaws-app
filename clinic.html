@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SafePaws Clinic</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--teal:#008080}
+    body{font-family:Poppins;background:#F0FDFD;margin:0}
+    .header{background:var(--teal);color:white;padding:16px;text-align:center;font-weight:700}
+    .box{background:white;margin:20px;padding:20px;border-radius:16px}
+    button{background:var(--teal);color:white;border:none;padding:8px 16px;border-radius:8px;margin-left:8px;cursor:pointer}
+  </style>
+</head>
+<body>
+  <div class="header">SafePaws Clinic</div>
+  <div id="bookingsList" class="box">Loading...</div>
+  <script type="module">
+    // ====== CONFIG DITO BOI - PALITAN MO TO ======
+    const firebaseConfig = {
+      apiKey: "AIzaSyBVaqhNCrgDlWGEVjXygszJUdQR_bpG7os",
+      authDomain: "safepaws-batangas.firebaseapp.com",
+      projectId: "safepaws-batangas",
+      storageBucket: "safepaws-batangas.firebasestorage.app",
+      messagingSenderId: "629904615191",
+      appId: "1:629904615191:web:45f7148d65ba61a867f952"
+    };
+    // =============================================
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    onSnapshot(query(collection(db,"bookings"), where("shopId","==","batangas-petcare")), snap => {
+      bookingsList.innerHTML = snap.empty ? 'No bookings' : snap.docs.map(d => `
+        <div style="border-bottom:1px solid #eee;padding:12px 0">
+          <b>${d.data().petName}</b> - ₱${d.data().total}<br>
+          Status: ${d.data().status} 
+          ${d.data().status !== 'done' ? `<button onclick="markDone('${d.id}')">Mark Done</button>` : ''}
+        </div>
+      `).join('');
+    });
+    window.markDone = async (id) => {
+      await updateDoc(doc(db,"bookings",id), {status:"done"});
+    };
+  </script>
+</body>
+</html>

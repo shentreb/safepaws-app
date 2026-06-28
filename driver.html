@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SafePaws Driver</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--teal:#008080}
+    body{font-family:Poppins;background:#F0FDFD;margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh}
+    .box{background:white;padding:24px;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,0.08);width:90%;max-width:400px}
+    h2{margin-top:0;text-align:center}
+    input,button{width:100%;padding:14px;margin:8px 0;border-radius:12px;border:1.5px solid #E5E7EB;font-family:Poppins;box-sizing:border-box}
+    button{background:var(--teal);color:white;border:none;font-weight:600;cursor:pointer}
+    .red{background:#DC2626}
+    .link{color:var(--teal);font-weight:600;cursor:pointer;text-align:center;display:block;margin-top:8px}
+  </style>
+</head>
+<body>
+  <div id="authBox" class="box">
+    <h2 id="authTitle">Driver Login</h2>
+    <input id="email" placeholder="Email" type="email">
+    <input id="password" placeholder="Password" type="password">
+    <button id="authBtn" onclick="login()">Sign In</button>
+    <span class="link" onclick="toggleAuth()">New? Create Account</span>
+    <div id="authError" style="color:red;font-size:13px;margin-top:8px;text-align:center"></div>
+  </div>
+
+  <div id="jobsBox" class="box" style="display:none">
+    <h2>New Jobs</h2>
+    <div id="jobsList">Loading...</div>
+    <button class="red" onclick="logout()">Logout</button>
+  </div>
+
+  <div id="activeBox" class="box" style="display:none">
+    <h2>Active Job</h2>
+    <div id="jobInfo"></div>
+    <button onclick="arrived()">Mark Arrived</button>
+    <button class="red" onclick="stopSharing()">Cancel</button>
+  </div>
+
+  <script type="module">
+    // ====== CONFIG DITO BOI - PALITAN MO TO ======
+    const firebaseConfig = {
+      apiKey: "AIzaSyBVaqhNCrgDlWGEVjXygszJUdQR_bpG7os",
+      authDomain: "safepaws-batangas.firebaseapp.com",
+      projectId: "safepaws-batangas",
+      storageBucket: "safepaws-batangas.firebasestorage.app",
+      messagingSenderId: "629904615191",
+      appId: "1:629904615191:web:45f7148d65ba61a867f952"
+    };
+    // =============================================
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    let driverId=null, activeJobId=null, watchId=null, isLoginMode=true;
+
+    window.toggleAuth = () => {
+      isLoginMode = !isLoginMode;
+      authTitle.innerText = isLoginMode ? 'Driver Login' : 'Create Account';
+      authBtn.innerText = isLoginMode ? 'Sign In' : 'Sign Up';
+      authBtn.onclick = isLoginMode ? login : signup;
+      authError.innerText = '';
+    };
+    
+    window.login = async () => {
+      try {
+        const cred = await signInWithEmailAndPassword(auth, email.value, password.value);
+        driverId = cred.user.uid;
+        authBox.style.display='none';
+        jobsBox.style.display='block';
+        listenJobs();
+      } catch(e){ authError.innerText = e.message }
+    };
+
+    window.signup = async () => {
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, email.value, password.value);
+        driverId = cred.user.uid;
+        authBox.style.display='none';
+        jobsBox.style.display='block';
+        listenJobs();
+      } catch(e){ authError.innerText = e.message }
+    };
+    
+    window.logout = async () => {
+      stopSharing();
+      await signOut(auth);
+      jobsBox.style.display='none';
+      activeBox.style.display='none';
+      authBox.style.display='block';
+      email.value = ''; password.value = '';
+    };
+
+    function listenJobs(){
+      onSnapshot(query(collection(db,"bookings"), where("status","==","pending")), snap => {
+        jobsList.innerHTML = snap.empty ? 'No jobs' : snap.docs.map(d => `
+          <div style="padding:12px 0;border-bottom:1px solid #eee">
+            <b>${d.data().petName}</b> - ₱${d.data().total}<br>
+            <button onclick="accept('${d.id}')">Accept</button>
+          </div>
+        `).join('');
+      });
+    }
+    
+    window.accept = async (id) => {
+      activeJobId = id;
+      await updateDoc(doc(db,"bookings",id), {driverId: driverId, status:"on_the_way"});
+      jobsBox.style.display='none';
+      activeBox.style.display='block';
+      jobInfo.innerText = "Sharing location...";
+      watchId = navigator.geolocation.watchPosition(pos => {
+        updateDoc(doc(db,"bookings",id), {driverLocation:{lat:pos.coords.latitude,lng:pos.coords.longitude}});
+      }, null, {enableHighAccuracy:true});
+    };
+    
+    window.arrived = async () => {
+      await updateDoc(doc(db,"bookings",activeJobId), {status:"arrived"});
+      stopSharing();
+    };
+    
+    window.stopSharing = () => {
+      if(watchId) navigator.geolocation.clearWatch(watchId);
+      watchId = null;
+      activeJobId = null;
+      activeBox.style.display='none';
+      jobsBox.style.display='block';
+    };
+  </script>
+</body>
+</html>

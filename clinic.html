@@ -39,16 +39,16 @@
     const listEl = document.getElementById('bookings-list');
 
     onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        window.location.href = 'index.html';
-        return;
+      if (!user) { 
+        window.location.href = 'index.html'; 
+        return; 
       }
       const q = query(collection(db, "bookings"), orderBy("createdAt", "desc"));
       onSnapshot(q, (snapshot) => {
         listEl.innerHTML = '';
-        if (snapshot.empty) {
-          listEl.innerHTML = '<p class="text-center text-gray-500">No bookings found.</p>';
-          return;
+        if (snapshot.empty) { 
+          listEl.innerHTML = '<p class="text-center text-gray-500">No bookings found.</p>'; 
+          return; 
         }
         snapshot.forEach(doc => {
           const b = doc.data();
@@ -57,4 +57,14 @@
               <p class="font-bold text-lg text-teal-800">${b.petName}</p>
               <p class="text-sm text-gray-700">Type: ${b.petType || 'N/A'} | Weight: ${b.weightClass || 'N/A'}</p>
               <p class="text-sm text-gray-700">Medical: ${b.medicalHistory || 'None'}</p>
-              <p class="text-sm text-gray
+              <p class="text-sm text-gray-600 mt-1">From: ${b.pickup}</p>
+              <p class="text-sm text-gray-600">To: ${b.dropoff}</p>
+              <p class="text-xs mt-2 font-semibold text-teal-600 uppercase">Status: ${b.status}</p>
+            </div>
+          `;
+        });
+      });
+    });
+  </script>
+</body>
+</html>

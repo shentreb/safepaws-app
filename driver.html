@@ -41,6 +41,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+// === ILAGAY MO DITO TUNAY MONG CONFIG ===
 const firebaseConfig = {
   apiKey: "AIzaSyBVaqhNCrgDlWGEVjXygszJUdQR_bpG7os",
   authDomain: "safepaws-app.firebaseapp.com",
@@ -49,6 +50,8 @@ const firebaseConfig = {
   messagingSenderId: "123456789",
   appId: "1:123456789:web:abc123"
 };
+// =========================================
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -56,18 +59,20 @@ const db = getFirestore(app);
 const loginBox = document.getElementById('loginBox');
 const dashboard = document.getElementById('dashboard');
 const err = document.getElementById('err');
+const list = document.getElementById('list'); // <-- ETO YUNG KULANG KANINA
 
 document.getElementById('loginBtn').onclick = async () => {
   err.textContent = '';
   try {
-    await signInWithEmailAndPassword(auth, email.value, password.value);
-  } catch(e) { err.textContent = e.message; }
+    await signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value);
+  } catch(e) { err.textContent = e.message; console.error(e); }
 };
 
 document.getElementById('logoutBtn').onclick = () => signOut(auth);
 
 onAuthStateChanged(auth, user => {
   if (user) {
+    console.log("Logged in:", user.email);
     loginBox.style.display = 'none';
     dashboard.style.display = 'block';
     loadBookings();
@@ -80,6 +85,7 @@ onAuthStateChanged(auth, user => {
 function loadBookings() {
   const q = query(collection(db, 'bookings'), where('status', 'in', ['Pending', 'Accepted', 'On the way']));
   onSnapshot(q, snap => {
+    console.log("Bookings found:", snap.size); // <-- DEBUG
     if (snap.empty) { list.innerHTML = '<p>No active bookings.</p>'; return; }
     list.innerHTML = '';
     snap.forEach(d => {
@@ -92,12 +98,15 @@ function loadBookings() {
           <b>From:</b> ${b.pickupAddress || 'N/A'} <br>
           <b>To:</b> ${b.clinicAddress || 'N/A'} <br>
           <b>Status:</b> ${b.status}
-          <div id="map-${d.id}"></div>
+          <div id="map-${d.id}" style="height:220px; border-radius:10px; margin-top:10px;"></div>
           <div id="btns-${d.id}"></div>
         </div>`;
-      renderMap(`map-${d.id}`, b.pickupLat, b.pickupLng, b.clinicLat, b.clinicLng);
+      setTimeout(() => renderMap(`map-${d.id}`, b.pickupLat, b.pickupLng, b.clinicLat, b.clinicLng), 100);
       renderButtons(`btns-${d.id}`, d.id, b.status);
     });
+  }, err => {
+    console.error("Firestore Error:", err); // <-- KUNG MAY ERROR DITO LALABAS
+    list.innerHTML = `<p style="color:red;">Error loading: ${err.message}</p>`;
   });
 }
 

@@ -3,37 +3,42 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SafePaws Driver Panel</title>
+<title>SafePaws Driver Login</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-  body { font-family: 'Inter', sans-serif; background: #f4f7f9; margin: 0; padding: 16px; }
-  .container { max-width: 700px; margin: auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-  h2 { color: #00a58b; margin-top: 0; }
-  .card { background: #f0fdfa; border: 1px solid #ccfbf1; padding: 14px; border-radius: 10px; margin-bottom: 12px; }
-  .card h3 { margin: 0 0 6px; color: #0f766e; }
-  .meta { font-size: 14px; color: #334155; line-height: 1.6; }
-  .meta b { color: #0f172a; }
-  .emergency { background: #fee2e2; border-color: #fecaca; }
-  .emergency h3 { color: #b91c1c; }
-  button { background: #00a58b; color: #fff; border: 0; padding: 10px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-right: 8px; margin-top: 8px; }
-  button:disabled { background: #94a3b8; cursor: not-allowed; }
+  body { font-family: 'Inter', sans-serif; background: #f4f7f9; margin: 0; padding: 16px; display:flex; align-items:center; justify-content:center; min-height:100vh; }
+  .container { max-width: 700px; width:100%; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+  h2 { color: #00a58b; margin-top: 0; text-align:center; }
+  input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing:border-box; }
+  button { background: #00a58b; color: #fff; border: 0; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; width:100%; margin-top: 8px; }
   button.danger { background: #dc2626; }
+  .card { background: #f0fdfa; border: 1px solid #ccfbf1; padding: 14px; border-radius: 10px; margin-bottom: 12px; }
+  .emergency { background: #fee2e2; border-color: #fecaca; }
   #map { height: 220px; border-radius: 10px; margin-top: 10px; }
-  .logout { background: transparent; color: #dc2626; border: 1px solid #fecaca; }
+  #dashboard { display:none; }
 </style>
 </head>
 <body>
 <div class="container">
-  <h2>🚗 Driver Dashboard</h2>
-  <button class="logout" id="logoutBtn">Logout</button>
-  <div id="list">Loading bookings...</div>
+  <div id="loginBox">
+    <h2>🚗 Driver Login</h2>
+    <input id="email" type="email" placeholder="Driver Email">
+    <input id="password" type="password" placeholder="Password">
+    <button id="loginBtn">Login as Driver</button>
+    <p id="err" style="color:red;text-align:center;"></p>
+  </div>
+
+  <div id="dashboard">
+    <h2>🚗 Driver Dashboard <button class="danger" id="logoutBtn" style="width:auto;float:right;">Logout</button></h2>
+    <div id="list">Loading...</div>
+  </div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -47,38 +52,49 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const listEl = document.getElementById('list');
 
-onAuthStateChanged(auth, user => {
-  if (!user) { window.location.href = '/index.html'; return; }
-  loadBookings();
-});
+const loginBox = document.getElementById('loginBox');
+const dashboard = document.getElementById('dashboard');
+const err = document.getElementById('err');
+
+document.getElementById('loginBtn').onclick = async () => {
+  err.textContent = '';
+  try {
+    await signInWithEmailAndPassword(auth, email.value, password.value);
+  } catch(e) { err.textContent = e.message; }
+};
 
 document.getElementById('logoutBtn').onclick = () => signOut(auth);
+
+onAuthStateChanged(auth, user => {
+  if (user) {
+    loginBox.style.display = 'none';
+    dashboard.style.display = 'block';
+    loadBookings();
+  } else {
+    loginBox.style.display = 'block';
+    dashboard.style.display = 'none';
+  }
+});
 
 function loadBookings() {
   const q = query(collection(db, 'bookings'), where('status', 'in', ['Pending', 'Accepted', 'On the way']));
   onSnapshot(q, snap => {
-    if (snap.empty) { listEl.innerHTML = '<p>No active bookings.</p>'; return; }
-    listEl.innerHTML = '';
+    if (snap.empty) { list.innerHTML = '<p>No active bookings.</p>'; return; }
+    list.innerHTML = '';
     snap.forEach(d => {
       const b = d.data();
-      const card = document.createElement('div');
-      card.className = 'card' + (b.isEmergency ? ' emergency' : '');
-      card.innerHTML = `
-        <h3>${b.petName || 'Pet'} ${b.isEmergency ? '🚨 EMERGENCY' : ''}</h3>
-        <div class="meta">
+      list.innerHTML += `
+        <div class="card ${b.isEmergency ? ' emergency' : ''}">
+          <h3>${b.petName || 'Pet'} ${b.isEmergency ? '🚨 EMERGENCY' : ''}</h3>
           <b>Type:</b> ${b.petType || 'N/A'} | <b>Weight:</b> ${b.petWeight || 'N/A'}kg <br>
           <b>Medical:</b> ${b.medicalNotes || 'None'} <br>
           <b>From:</b> ${b.pickupAddress || 'N/A'} <br>
           <b>To:</b> ${b.clinicAddress || 'N/A'} <br>
-          <b>Distance:</b> ${b.distanceKm || '0.0'} km | <b>Fare:</b> ₱${b.fare || 0} <br>
           <b>Status:</b> ${b.status}
-        </div>
-        <div id="map-${d.id}"></div>
-        <div id="btns-${d.id}"></div>
-      `;
-      listEl.appendChild(card);
+          <div id="map-${d.id}"></div>
+          <div id="btns-${d.id}"></div>
+        </div>`;
       renderMap(`map-${d.id}`, b.pickupLat, b.pickupLng, b.clinicLat, b.clinicLng);
       renderButtons(`btns-${d.id}`, d.id, b.status);
     });
